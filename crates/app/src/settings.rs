@@ -162,7 +162,7 @@ impl Default for Settings {
 /// is and that the popover owns it.
 const FILE_HEADER: &str = "\
 # scorebar settings. Written by the Settings section; safe to edit by hand.
-# menu_bar_title: \"closest_game\", \"record\", or \"glyph_only\".
+# menu_bar_title: \"margin\", \"closest_game\", \"record\", or \"glyph_only\".
 # refresh_seconds: Sleeper's cdn caches these endpoints for 60 seconds, so
 # anything faster refetches the same numbers.
 ";
