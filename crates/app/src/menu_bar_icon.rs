@@ -27,38 +27,41 @@ use objc2_core_graphics::{CGContext, CGLineCap, CGLineJoin};
 use objc2_foundation::{NSAttributedString, NSDictionary, NSPoint, NSRect, NSSize};
 
 /// Height of the item's box, in points. Exactly the optical height of the
-/// system glyphs beside it: the envelope and calendar outlines of its siblings
-/// are 13pt tall, and anything taller reads as bigger than the battery.
-pub const SIZE: f64 = 13.0;
+/// system glyphs beside it. Measured against the battery outline and the
+/// Control Center switches on a live menu bar rather than guessed: 13pt, which
+/// is what the human interface guidelines suggest for a template image, came
+/// out visibly smaller than everything around it.
+pub const SIZE: f64 = 15.0;
 
 /// Width of the scoreboard glyph, in points. A scoreboard is landscape — the
 /// real thing is two numbers side by side — so unlike a ring the glyph is
 /// wider than it is tall.
-pub const GLYPH_WIDTH: f64 = 15.0;
+pub const GLYPH_WIDTH: f64 = 17.0;
 
 /// Height of the scoreboard glyph. Shorter than [`SIZE`]: a hollow rectangle
 /// drawn to the full 13pt reads heavier than the battery outline next to it,
 /// because a rectangle fills its box where a rounded glyph does not.
-pub const GLYPH_HEIGHT: f64 = 10.0;
+pub const GLYPH_HEIGHT: f64 = 12.0;
 
 /// Stroke weight of the glyph's outline and its divider, in points. Matched to
 /// the battery's outline, which is lighter than a ring of the same size would
 /// want: a rectangle has four long straight edges, and a weight that reads as
 /// thin on a circle reads as heavy here.
-pub const STROKE: f64 = 1.3;
+pub const STROKE: f64 = 1.4;
 
 /// Corner radius of the scoreboard, before [`corner_radius`] clamps it. Enough
 /// to say "rounded" at 13pt without the corners eating the short edges.
-pub const CORNER_RADIUS: f64 = 2.5;
+pub const CORNER_RADIUS: f64 = 3.0;
 
 /// Between the glyph and the text after it.
 pub const LABEL_GAP: f64 = 4.0;
 
 /// The point size of the text beside the glyph. The menu bar's own font is
 /// 13pt, but the system's battery percentage is set smaller and this item sits
-/// right beside it: measured off a 2x screen capture, the battery digits are
-/// 16px tall and 12pt here came out at 18px, so 11pt is what lines them up.
-pub const TEXT_POINT_SIZE: f64 = 11.0;
+/// right beside it. 11pt lined the cap heights up on paper and read as small
+/// on a real bar next to the battery percentage, so this is set by eye at the
+/// size the system's own numbers appear to be.
+pub const TEXT_POINT_SIZE: f64 = 12.5;
 
 /// What a laid-out piece of the item is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
