@@ -152,7 +152,7 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             sleeper_username: None,
-            menu_bar_title: MenuBarTitle::ClosestGame,
+            menu_bar_title: MenuBarTitle::default(),
             refresh_seconds: DEFAULT_REFRESH_SECONDS,
         }
     }
@@ -286,7 +286,7 @@ mod tests {
     fn the_defaults_are_a_minute_the_closest_game_and_no_username() {
         let settings = Settings::default();
         assert_eq!(settings.sleeper_username, None);
-        assert_eq!(settings.menu_bar_title, MenuBarTitle::ClosestGame);
+        assert_eq!(settings.menu_bar_title, MenuBarTitle::Margin);
         assert_eq!(settings.refresh_seconds, 60);
         assert!(!settings.is_configured());
     }

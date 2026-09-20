@@ -759,15 +759,32 @@ mod tests {
         );
     }
 
-    /// The default: the game closest to even, which is the whole reason to put
-    /// a fantasy score in the menu bar.
+    /// The default: how far ahead or behind the game closest to even is,
+    /// which is the whole reason to put a fantasy score in the menu bar —
+    /// and short enough that a busy menu bar still has room to show it.
     #[test]
-    fn the_default_title_is_the_closest_games_score_line() {
+    fn the_default_title_is_the_closest_games_margin() {
         let week = snapshot(vec![
             card("runaway", 0.93, 118.44, Some(79.02)),
             card("coin toss", 0.54, 82.10, Some(79.66)),
         ]);
         let state = menu_bar_state_for(Some(&week), &Settings::default());
+        assert_eq!(label(&state).as_deref(), Some("+2.44"));
+    }
+
+    /// Behind, the margin carries a real minus sign rather than a hyphen.
+    #[test]
+    fn a_deficit_is_signed_with_a_minus() {
+        let week = snapshot(vec![card("behind", 0.16, 65.44, Some(104.32))]);
+        let state = menu_bar_state_for(Some(&week), &Settings::default());
+        assert_eq!(label(&state).as_deref(), Some("\u{2212}38.88"));
+    }
+
+    /// The full score line is still there for a menu bar with the room.
+    #[test]
+    fn the_closest_game_choice_still_prints_both_scores() {
+        let week = snapshot(vec![card("coin toss", 0.54, 82.10, Some(79.66))]);
+        let state = menu_bar_state_for(Some(&week), &with(MenuBarTitle::ClosestGame));
         assert_eq!(label(&state).as_deref(), Some("82.10 – 79.66"));
     }
 
