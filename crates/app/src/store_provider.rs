@@ -623,11 +623,32 @@ pub fn menu_bar_state_for(snapshot: Option<&Snapshot>, settings: &Settings) -> M
         return MenuBarState::Idle;
     }
     let label = match settings.menu_bar_title {
+        MenuBarTitle::Margin => snapshot.closest_game().map(margin_line),
         MenuBarTitle::ClosestGame => snapshot.closest_game().map(score_line),
         MenuBarTitle::Record => Some(week_record(&snapshot.leagues)),
         MenuBarTitle::GlyphOnly => None,
     };
     MenuBarState::Live { label }
+}
+
+/// The closest game as a signed margin: `"+31.02"`, `"−38.88"`, or my score
+/// on its own in a week with nobody on the other side.
+///
+/// A real minus sign rather than a hyphen, to match the en dash the score line
+/// uses and because a hyphen in front of a decimal reads as a stray dash at
+/// menu bar size.
+fn margin_line(card: &LeagueCard) -> String {
+    match &card.opponent {
+        Some(opponent) => {
+            let margin = card.me.score - opponent.score;
+            if margin < 0.0 {
+                format!("\u{2212}{:.2}", margin.abs())
+            } else {
+                format!("+{margin:.2}")
+            }
+        }
+        None => card.me.score_text(),
+    }
 }
 
 /// The closest game as one line: `"118.44 – 79.02"`, or just my score in a

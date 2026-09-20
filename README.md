@@ -40,7 +40,7 @@ The **Settings** row in the popover, or `~/.config/scorebar/config.toml`:
 | key | default | |
 |---|---|---|
 | `sleeper_username` | none | your Sleeper username, the one thing scorebar needs; without it the popover asks for it |
-| `menu_bar_title` | `closest_game` | what the menu bar item prints beside the glyph: `closest_game`, `record`, or `glyph_only`. The popover carries every league either way |
+| `menu_bar_title` | `margin` | what the menu bar item prints beside the glyph: `margin` (how far ahead or behind the closest game is), `closest_game` (both scores), `record`, or `glyph_only`. A full score line is wide, and macOS hides a status item it has no room for rather than shrinking it, so the default is the short one. The popover carries every league either way |
 | `refresh_seconds` | `60` | how often to refetch. Sleeper's cdn caches these endpoints for 60 seconds, so anything faster refetches the same numbers; the popover offers 1, 5 and 15 minutes and a hand-edited file is clamped to 15 seconds |
 
 ## Build

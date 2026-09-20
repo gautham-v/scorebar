@@ -27,10 +27,16 @@ pub const APP_DIR_NAME: &str = "scorebar";
 /// What the menu bar item prints beside the scoreboard glyph.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum MenuBarTitle {
-    /// The closest game's score line — `"65.44 – 104.32"`. The default,
-    /// because the whole reason to put a fantasy score in the menu bar is the
-    /// matchup that is still in doubt.
+    /// How far ahead or behind the closest game is — `"+31.02"`, `"−38.88"`.
+    /// The default, and deliberately the shortest thing that still answers the
+    /// question you looked up for. A full score line is around 95 points wide,
+    /// and a menu bar with a dozen items in it has no room for that: macOS
+    /// does not shrink an item that will not fit, it hides it, so the widest
+    /// default would be the one nobody ever sees.
     #[default]
+    Margin,
+    /// The closest game's score line — `"65.44 – 104.32"`. Both numbers, for a
+    /// menu bar with the room to show them.
     ClosestGame,
     /// A record across every league, like `"2–1"`. What to show once the week
     /// is decided and the scores have stopped moving.
@@ -42,6 +48,7 @@ pub enum MenuBarTitle {
 
 /// How each choice is spelled in the config file — plain lowercase words, so
 /// the file stays something a person can edit.
+const MARGIN_KEY: &str = "margin";
 const CLOSEST_GAME_KEY: &str = "closest_game";
 const RECORD_KEY: &str = "record";
 const GLYPH_ONLY_KEY: &str = "glyph_only";
@@ -50,6 +57,7 @@ impl MenuBarTitle {
     /// How this choice is spelled in the config file.
     pub fn as_config_str(&self) -> &'static str {
         match self {
+            MenuBarTitle::Margin => MARGIN_KEY,
             MenuBarTitle::ClosestGame => CLOSEST_GAME_KEY,
             MenuBarTitle::Record => RECORD_KEY,
             MenuBarTitle::GlyphOnly => GLYPH_ONLY_KEY,
@@ -62,17 +70,20 @@ impl MenuBarTitle {
     /// heard of is most likely one a newer build wrote.
     pub fn parse(value: &str) -> Self {
         let trimmed = value.trim();
-        if trimmed.eq_ignore_ascii_case(RECORD_KEY) {
+        if trimmed.eq_ignore_ascii_case(CLOSEST_GAME_KEY) {
+            MenuBarTitle::ClosestGame
+        } else if trimmed.eq_ignore_ascii_case(RECORD_KEY) {
             MenuBarTitle::Record
         } else if trimmed.eq_ignore_ascii_case(GLYPH_ONLY_KEY) {
             MenuBarTitle::GlyphOnly
         } else {
-            MenuBarTitle::ClosestGame
+            MenuBarTitle::Margin
         }
     }
 
     /// Every choice, in the order the Settings section lists them.
-    pub const ALL: [MenuBarTitle; 3] = [
+    pub const ALL: [MenuBarTitle; 4] = [
+        MenuBarTitle::Margin,
         MenuBarTitle::ClosestGame,
         MenuBarTitle::Record,
         MenuBarTitle::GlyphOnly,
@@ -81,6 +92,7 @@ impl MenuBarTitle {
     /// The label the Settings row shows for this choice.
     pub fn label(&self) -> &'static str {
         match self {
+            MenuBarTitle::Margin => "Margin",
             MenuBarTitle::ClosestGame => "Closest game",
             MenuBarTitle::Record => "Record",
             MenuBarTitle::GlyphOnly => "Icon only",
@@ -300,12 +312,17 @@ mod tests {
     fn title_names_parse_whatever_their_case() {
         assert_eq!(MenuBarTitle::parse("Record"), MenuBarTitle::Record);
         assert_eq!(MenuBarTitle::parse(" GLYPH_ONLY "), MenuBarTitle::GlyphOnly);
+        assert_eq!(
+            MenuBarTitle::parse("Closest_Game"),
+            MenuBarTitle::ClosestGame
+        );
+        assert_eq!(MenuBarTitle::parse(" margin "), MenuBarTitle::Margin);
     }
 
     /// A value from a newer build is not a reason to refuse the file.
     #[test]
     fn an_unknown_title_falls_back_to_the_default() {
-        assert_eq!(MenuBarTitle::parse("margin"), MenuBarTitle::ClosestGame);
+        assert_eq!(MenuBarTitle::parse("win_probability"), MenuBarTitle::Margin);
     }
 
     #[test]

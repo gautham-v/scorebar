@@ -285,7 +285,7 @@ impl Popover {
             .line_height(theme::LINE_TITLE)
             .child(
                 div()
-                    .font_weight(FontWeight::SEMIBOLD)
+                    .font_weight(theme::WEIGHT_EMPHASIS)
                     .child(week_label(self.snapshot().map(|s| s.week))),
             )
             .child(
@@ -405,7 +405,7 @@ impl Popover {
                 .child(
                     div()
                         .font_weight(if mine_leads {
-                            FontWeight::SEMIBOLD
+                            theme::WEIGHT_EMPHASIS
                         } else {
                             FontWeight::NORMAL
                         })
@@ -416,7 +416,7 @@ impl Popover {
                 .child(
                     div()
                         .font_weight(if theirs_lead {
-                            FontWeight::SEMIBOLD
+                            theme::WEIGHT_EMPHASIS
                         } else {
                             FontWeight::NORMAL
                         })
@@ -1131,9 +1131,10 @@ mod tests {
             + 2.0 * theme::BLOCK_GAP_PX
             + LEAGUES_PAD_BOTTOM;
         assert_eq!(leagues, 203.0);
-        let menu = 5.0 * ROW_HEIGHT + SEPARATOR_HEIGHT;
+        // Refresh, Open Sleeper, Settings, Quit. There is no login item.
+        let menu = 4.0 * ROW_HEIGHT + SEPARATOR_HEIGHT;
         let total = POPOVER_PAD_TOTAL + SECTION_HEADER_HEIGHT + leagues + SEPARATOR_HEIGHT + menu;
-        assert_eq!(total, 373.0);
+        assert_eq!(total, 350.0);
     }
 
     /// The notice line and the expanded Settings section each add exactly
@@ -1141,8 +1142,9 @@ mod tests {
     #[test]
     fn the_states_add_their_own_height() {
         assert_eq!(NOTICE_HEIGHT, theme::LINE_TINY_PX);
-        // Three labels, the note, and the seven rows under them.
-        assert_eq!(SETTINGS_HEIGHT, 3.0 * 21.0 + 17.0 + 7.0 * 23.0);
+        // Three labels, the note, and the eight rows under them: the
+        // username, four menu bar titles and three refresh intervals.
+        assert_eq!(SETTINGS_HEIGHT, 3.0 * 21.0 + 17.0 + 8.0 * 23.0);
         const { assert!(SETTINGS_HEIGHT > 4.0 * ROW_HEIGHT) };
     }
 

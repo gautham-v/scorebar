@@ -15,7 +15,7 @@
 //! There is no accent and no warning colour either: a failure the popover has
 //! to report, it reports in words.
 
-use gpui::{px, Pixels, Rgba, WindowAppearance};
+use gpui::{px, FontWeight, Pixels, Rgba, WindowAppearance};
 
 /// `const`-friendly hex -> [`Rgba`] (gpui's own `rgb()` is not `const`).
 const fn hex(value: u32) -> Rgba {
@@ -72,10 +72,10 @@ pub const LIGHT: Theme = Theme {
     border: hex_a(0x000000, 0.06),
     // System label colour: black at 85%, so text sits in the material rather
     // than on top of it.
-    text: hex_a(0x000000, 0.85),
-    secondary: hex(0x6e6e73),
-    tertiary: hex(0xaeaeb2),
-    separator: hex_a(0x000000, 0.09),
+    text: hex_a(0x000000, 0.80),
+    secondary: hex_a(0x000000, 0.52),
+    tertiary: hex_a(0x000000, 0.32),
+    separator: hex_a(0x000000, 0.08),
     hover: hex_a(0x000000, 0.06),
 };
 
@@ -88,10 +88,10 @@ pub const DARK: Theme = Theme {
         a: BG_ALPHA,
     },
     border: hex_a(0xffffff, 0.10),
-    text: hex_a(0xffffff, 0.85),
-    secondary: hex(0x98989d),
-    tertiary: hex(0x8e8e93),
-    separator: hex_a(0xffffff, 0.12),
+    text: hex_a(0xffffff, 0.82),
+    secondary: hex_a(0xffffff, 0.50),
+    tertiary: hex_a(0xffffff, 0.32),
+    separator: hex_a(0xffffff, 0.10),
     hover: hex_a(0xffffff, 0.10),
 };
 
@@ -131,12 +131,31 @@ impl Theme {
         }
     }
 
-    /// The fill of a meter. Always ink: a meter shows a proportion, and the
-    /// proportion is the message.
+    /// The fill of a meter: the ink, backed off.
+    ///
+    /// At full ink a 260px bar is the heaviest thing in the popover and pulls
+    /// the eye off the numbers it is there to support. The system draws its
+    /// own progress bars in a fill colour, not in label ink, for the same
+    /// reason.
     pub fn meter_fill(&self) -> Rgba {
-        self.text
+        Rgba {
+            a: self.text.a * METER_FILL_ALPHA,
+            ..self.text
+        }
     }
 }
+
+/// How much of the ink a meter's fill keeps. See [`Theme::meter_fill`].
+pub const METER_FILL_ALPHA: f32 = 0.55;
+
+/// The weight a section header, a leading score and an active tab are set in.
+///
+/// Medium, not semibold. The popover hangs off the same menu bar as the system
+/// ones, and next to the Battery menu — which sets its headers a single step
+/// above its body text and nothing heavier — semibold reads as shouting. The
+/// ink-versus-grey contrast is what says who is ahead; the weight only has to
+/// agree with it.
+pub const WEIGHT_EMPHASIS: FontWeight = FontWeight::MEDIUM;
 
 // ── Sizes ────────────────────────────────────────────────────────────────────
 
@@ -174,10 +193,10 @@ pub const HAIRLINE_PX: f32 = 1.0;
 pub const HAIRLINE: Pixels = px(HAIRLINE_PX);
 
 /// Height of the bar under a matchup that shows how the two scores divide.
-pub const METER_HEIGHT_PX: f32 = 4.0;
+pub const METER_HEIGHT_PX: f32 = 3.0;
 pub const METER_HEIGHT: Pixels = px(METER_HEIGHT_PX);
 /// Corner radius of a meter.
-pub const METER_RADIUS: Pixels = px(2.);
+pub const METER_RADIUS: Pixels = px(1.5);
 /// The gap between a matchup's label row, its meter and its caption.
 pub const METER_GAP_PX: f32 = 4.0;
 pub const METER_GAP: Pixels = px(METER_GAP_PX);
@@ -253,9 +272,9 @@ mod tests {
     }
 
     #[test]
-    fn meters_are_four_pixels_and_blocks_are_nine_apart() {
-        assert_eq!(METER_HEIGHT, px(4.));
-        assert_eq!(METER_RADIUS, px(2.));
+    fn meters_are_three_pixels_and_blocks_are_nine_apart() {
+        assert_eq!(METER_HEIGHT, px(3.));
+        assert_eq!(METER_RADIUS, px(1.5));
         assert_eq!(BLOCK_GAP, px(9.));
         // A league block is further from its neighbour than a meter is from
         // its own caption, or the popover reads as one long list.
@@ -287,7 +306,8 @@ mod tests {
     /// A meter is a proportion, not a verdict, so it is always ink.
     #[test]
     fn a_meter_is_always_ink() {
-        assert_eq!(LIGHT.meter_fill(), LIGHT.text);
-        assert_eq!(DARK.meter_fill(), DARK.text);
+        assert!(LIGHT.meter_fill().a < LIGHT.text.a);
+        assert_eq!(LIGHT.meter_fill().r, LIGHT.text.r);
+        assert!(DARK.meter_fill().a < DARK.text.a);
     }
 }

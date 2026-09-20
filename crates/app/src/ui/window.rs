@@ -37,9 +37,9 @@
 use gpui::prelude::FluentBuilder;
 use gpui::{
     actions, div, px, relative, size, AnyElement, App, AppContext, Bounds, Context, EventEmitter,
-    FocusHandle, Focusable, FontWeight, InteractiveElement, IntoElement, KeyBinding, ParentElement,
-    Pixels, Render, Rgba, SharedString, StatefulInteractiveElement, Styled, TitlebarOptions,
-    Window, WindowBackgroundAppearance, WindowBounds, WindowHandle, WindowKind, WindowOptions,
+    FocusHandle, Focusable, InteractiveElement, IntoElement, KeyBinding, ParentElement, Pixels,
+    Render, Rgba, SharedString, StatefulInteractiveElement, Styled, TitlebarOptions, Window,
+    WindowBackgroundAppearance, WindowBounds, WindowHandle, WindowKind, WindowOptions,
 };
 
 use scorebar_core::{LeagueCard, Side};
@@ -421,7 +421,7 @@ impl DetailWindow {
                             .text_size(theme::TEXT_TITLE)
                             .line_height(theme::LINE_TITLE)
                             .text_color(if active { theme.text } else { theme.secondary })
-                            .when(active, |el| el.font_weight(FontWeight::SEMIBOLD))
+                            .when(active, |el| el.font_weight(theme::WEIGHT_EMPHASIS))
                             .child(SharedString::from(truncate(&league.card.name, TAB_CHARS)))
                             .on_click(cx.listener(move |this, _, _, cx| this.select(index, cx)))
                             .into_any_element()
@@ -478,7 +478,7 @@ impl DetailWindow {
                     .gap(px(COLUMN_GAP_PX))
                     .text_size(theme::TEXT_TITLE)
                     .line_height(theme::LINE_TITLE)
-                    .font_weight(FontWeight::SEMIBOLD)
+                    .font_weight(theme::WEIGHT_EMPHASIS)
                     .child(
                         div()
                             .truncate()
@@ -510,7 +510,7 @@ impl DetailWindow {
                             .flex_shrink_0()
                             .font_family(theme::MONO_FAMILY)
                             .when(ahead == Leader::Theirs, |el| {
-                                el.font_weight(FontWeight::SEMIBOLD)
+                                el.font_weight(theme::WEIGHT_EMPHASIS)
                                     .text_color(theme.score_ink(true))
                             })
                             .child(their_score),
@@ -637,7 +637,7 @@ impl DetailWindow {
             .flex_shrink_0()
             .font_family(theme::MONO_FAMILY)
             .text_color(ink)
-            .when(leading, |el| el.font_weight(FontWeight::SEMIBOLD))
+            .when(leading, |el| el.font_weight(theme::WEIGHT_EMPHASIS))
             .child(SharedString::from(points))
             .into_any_element();
 
