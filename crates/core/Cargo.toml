@@ -1,0 +1,18 @@
+[package]
+name = "scorebar-core"
+description = "Matchup snapshots and win probability for scorebar"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+# Everything the app knows that is not drawing: what a week looks like, what it
+# is projected to look like, and how likely you are to win it. No gpui here, so
+# the simulation can be tested in CI like any other arithmetic.
+[dependencies]
+sleeper = { path = "../sleeper" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+rand.workspace = true

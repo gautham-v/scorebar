@@ -1,0 +1,93 @@
+[package]
+name = "scorebar"
+description = "Live fantasy football matchups in the macOS menu bar"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+# The only crate that needs a Mac. The AppKit surface is the same one claudebar
+# uses: an NSStatusItem and a borderless panel for the popover. There is no
+# login item — scorebar is a thing you open when games are on, not something
+# that should start itself with the machine.
+[dependencies]
+scorebar-core = { path = "../core" }
+sleeper = { path = "../sleeper" }
+gpui = "0.2.2"
+chrono = { version = "0.4", features = ["serde"] }
+futures = "0.3"
+block2 = "0.6"
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+toml = "0.8"
+dirs = "5"
+
+objc2 = "0.6"
+
+[dependencies.reqwest]
+version = "0.12"
+default-features = false
+features = ["blocking", "json", "rustls-tls"]
+
+[dependencies.objc2-core-graphics]
+version = "0.3"
+features = ["CGColor", "CGColorSpace", "CGContext", "CGPath"]
+
+[dependencies.objc2-foundation]
+version = "0.3"
+features = [
+    "NSString",
+    "NSGeometry",
+    "NSDate",
+    "NSArray",
+    "NSEnumerator",
+    "NSObjCRuntime",
+    "NSValue",
+    "NSError",
+    "NSURL",
+    "NSNotification",
+    "NSRunLoop",
+    "NSThread",
+    "NSBundle",
+    "NSAttributedString",
+    "NSDictionary",
+]
+
+[dependencies.objc2-app-kit]
+version = "0.3"
+features = [
+    "NSApplication",
+    "NSResponder",
+    "NSWindow",
+    "NSView",
+    "NSControl",
+    "NSButton",
+    "NSStatusBar",
+    "NSStatusItem",
+    "NSStatusBarButton",
+    "NSImage",
+    "NSScreen",
+    "NSEvent",
+    "NSPanel",
+    "NSRunningApplication",
+    "NSGraphicsContext",
+    "NSCell",
+    "NSFont",
+    "NSColor",
+    "NSAttributedString",
+    "NSStringDrawing",
+    "NSAppearance",
+    "block2",
+    "objc2-core-foundation",
+    "objc2-core-graphics",
+]
+
+[lib]
+name = "scorebar"
+path = "src/lib.rs"
+
+[[bin]]
+name = "scorebar"
+path = "src/main.rs"

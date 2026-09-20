@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# Build a release binary and assemble target/Scorebar.app around it.
+#
+# The .app is not cosmetic: LSUIElement is what keeps scorebar out of the Dock,
+# and a bundle identifier is what lets macOS tell one copy from another.
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Honour CARGO_TARGET_DIR / .cargo/config.toml rather than assuming ./target.
+TARGET_DIR="$(cargo metadata --no-deps --format-version 1 --manifest-path "$ROOT/Cargo.toml" \
+  | sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')"
+TARGET_DIR="${TARGET_DIR:-$ROOT/target}"
+
+APP="$TARGET_DIR/Scorebar.app"
+# SCOREBAR_BIN points at a prebuilt binary (the release workflow passes the
+# universal one); otherwise build for this machine.
+BIN="${SCOREBAR_BIN:-$TARGET_DIR/release/scorebar}"
+# The workspace version, which every crate inherits, so this is the one number.
+VERSION="$(sed -n 's/^version = "\(.*\)"/\1/p' "$ROOT/Cargo.toml" | head -n 1)"
+
+if [ -z "${SCOREBAR_BIN:-}" ]; then
+  # -p scorebar: only the app crate needs a Mac, and it is the only one with a
+  # binary worth bundling.
+  cargo build --release -p scorebar --manifest-path "$ROOT/Cargo.toml"
+fi
+
+rm -rf "$APP"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+cp "$BIN" "$APP/Contents/MacOS/scorebar"
+cp "$ROOT/assets/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+
+cat > "$APP/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Scorebar</string>
+	<key>CFBundleDisplayName</key>
+	<string>Scorebar</string>
+	<key>CFBundleExecutable</key>
+	<string>scorebar</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.gauthamv.scorebar</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>${VERSION}</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+</dict>
+</plist>
+PLIST
+
+# Sign with a stable identity when the machine has one. Ad-hoc signatures get a
+# fresh code identity on every rebuild, which makes macOS treat each build as a
+# different app: Gatekeeper re-prompts, and the launch-at-login registration
+# made by the previous build points at an app macOS no longer recognises.
+# Override with CODESIGN_IDENTITY.
+IDENTITY="${CODESIGN_IDENTITY:-}"
+if [ -z "$IDENTITY" ]; then
+  # Prefer Developer ID, which Gatekeeper trusts, over an Xcode development
+  # certificate, which it does not.
+  IDENTITIES="$(security find-identity -v -p codesigning 2>/dev/null | sed -n 's/.*"\(.*\)"/\1/p')"
+  IDENTITY="$(printf '%s\n' "$IDENTITIES" | grep -m1 '^Developer ID Application' || printf '%s\n' "$IDENTITIES" | head -n 1)"
+fi
+if [ -n "$IDENTITY" ]; then
+  # Fail rather than warn: an unsigned build launched from /Applications is a
+  # new app to macOS every time it is rebuilt.
+  codesign --force --options runtime --sign "$IDENTITY" "$APP"
+else
+  echo "note: no codesigning identity found; signing ad-hoc, so macOS will treat every rebuild as a new app"
+  codesign --force --sign - "$APP" 2>/dev/null \
+    || echo "warning: ad-hoc codesign failed; launch at login may not stick"
+fi
+
+echo "built $APP"
+
+# When CARGO_TARGET_DIR points elsewhere, keep the documented ./target/Scorebar.app
+# path working — the release workflow and the docs both name it.
+if [ "$TARGET_DIR" != "$ROOT/target" ]; then
+  # A copy, not a symlink: Launch Services refuses to `open` a symlinked .app.
+  mkdir -p "$ROOT/target"
+  rm -rf "$ROOT/target/Scorebar.app"
+  cp -R "$APP" "$ROOT/target/Scorebar.app"
+  echo "copied to $ROOT/target/Scorebar.app"
+fi

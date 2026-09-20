@@ -14,7 +14,7 @@ cask "scorebar" do
   desc "Live fantasy football matchups in the menu bar"
   homepage "https://github.com/gautham-v/scorebar"
 
-  # SMAppService, which launch-at-login uses, is macOS 13+.
+  # gpui's metal renderer wants a recent macOS.
   depends_on macos: :ventura
 
   app "Scorebar.app"

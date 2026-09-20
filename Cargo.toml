@@ -1,10 +1,10 @@
-# scorebar is a workspace because the Sleeper client is worth keeping separate
-# from the menu bar app: it is plain data fetching with no gpui or AppKit in
-# sight, so it builds and tests on any platform and in CI without a display.
-# The app crate lands beside it later and depends on it.
+# scorebar is a workspace so that the parts that are not a menu bar app do not
+# have to pretend to be one. `sleeper` is plain data fetching and `core` is
+# plain arithmetic: both build and test on any platform, in CI, with no
+# display and no AppKit. Only `app` needs a Mac.
 [workspace]
 resolver = "2"
-members = ["crates/sleeper"]
+members = ["crates/sleeper", "crates/core", "crates/app"]
 
 # Every crate in the workspace inherits these, so a version bump is one edit.
 [workspace.package]
@@ -23,9 +23,16 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 anyhow = "1"
 thiserror = "2"
+rand = "0.8"
 reqwest = { version = "0.12", default-features = false, features = [
     "blocking",
     "json",
     "rustls-tls",
     "gzip",
 ] }
+
+# Cargo only honours a profile at the workspace root; the same block inside a
+# member crate is silently ignored. opt-level 2 is what claudebar ships: the
+# difference from 3 is invisible for a menu bar app and the build is quicker.
+[profile.release]
+opt-level = 2

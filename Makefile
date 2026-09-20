@@ -1,4 +1,24 @@
-.PHONY: test check fmt clean
+.PHONY: run install bundle test check fmt clean
+
+# Honour CARGO_TARGET_DIR / .cargo/config.toml rather than assuming ./target.
+TARGET_DIR := $(shell cargo metadata --no-deps --format-version 1 | sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')
+
+# Build the bundle and launch it (kills any running copy first).
+run: bundle
+	@pkill -x scorebar 2>/dev/null || true
+	open "$(TARGET_DIR)/Scorebar.app"
+
+# Put the app somewhere permanent and run it from there. Launch-at-login
+# registers whatever path the app was launched from, so a copy that lives in
+# /Applications is the one worth registering.
+install: bundle
+	@pkill -x scorebar 2>/dev/null || true
+	rm -rf "/Applications/Scorebar.app"
+	cp -R "$(TARGET_DIR)/Scorebar.app" "/Applications/Scorebar.app"
+	open "/Applications/Scorebar.app"
+
+bundle:
+	./scripts/bundle.sh
 
 test:
 	cargo test --workspace
@@ -13,16 +33,3 @@ fmt:
 
 clean:
 	cargo clean
-
-# The app crate adds run/install/bundle here once it exists:
-#
-# run: bundle
-# 	@pkill -x scorebar 2>/dev/null || true
-# 	open "$(TARGET_DIR)/Scorebar.app"
-#
-# install: bundle
-# 	copies Scorebar.app to /Applications and launches it from there, because
-# 	launch-at-login registers whatever path the app ran from.
-#
-# bundle:
-# 	./scripts/bundle.sh

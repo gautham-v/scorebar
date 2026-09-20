@@ -1,11 +1,12 @@
 name: Release
 
-# Dormant until the first v* tag. The app crate and scripts/bundle.sh do not
-# exist yet, so this workflow would fail if it ran on every push to main —
-# hence tags and manual runs only. It goes live with the first v* tag, once
-# there is a Scorebar.app to build.
+# Pushes to main build (and sign, when the secrets are set) but publish
+# nothing. They exist so the cargo cache lives on main: GitHub scopes caches
+# by ref, so a cache written by one tag's run is invisible to the next tag,
+# while every ref can read main's.
 on:
   push:
+    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
 
