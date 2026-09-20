@@ -6,19 +6,35 @@ a popover with every league you are in, who is leading, and by how much.
 Rust + [GPUI](https://www.gpui.rs/), sibling of
 [claudebar](https://github.com/gautham-v/claudebar).
 
+![The scorebar popover, open under the menu bar, showing three leagues](docs/screenshot.png)
+
 Give it your Sleeper username and it finds your leagues. The menu bar carries the one still in
 doubt; the popover carries them all, each block a matchup with your score, theirs, and a meter of
 your chance of winning it. Monochrome, one type size, no Dock icon. There is no account to connect
 and no API key: Sleeper's read API is public, so a username is all there is.
 
-**No release yet.** The app builds and runs from source — `make run` and `make install` below —
-but no `v*` tag has been cut, so there is nothing on the releases page and nothing in the tap.
-The workflow and the cask template are in place and go live with the first tag.
+```sh
+brew install --cask gautham-v/tap/scorebar
+```
 
 Not affiliated with, endorsed by, or connected to Sleeper. It reads Sleeper's public API the same
 way a browser does.
 
-## Running it
+## Install
+
+```sh
+brew install --cask gautham-v/tap/scorebar
+```
+
+The cask installs a universal build, signed with a Developer ID and notarized, so it opens without
+the "unidentified developer" detour. `brew uninstall --cask scorebar` quits it and removes it;
+add `--zap` to take the config and the cache with it.
+
+Releases are cut by pushing a `v*` tag: `.github/workflows/release.yml` builds both architectures
+into one binary, signs and notarizes it, publishes the release, and pushes the filled-in
+`packaging/scorebar.rb` to the tap.
+
+## From source
 
 With a Rust toolchain (1.98 or newer) and Xcode installed:
 
@@ -28,10 +44,6 @@ make install   # builds Scorebar.app, copies it to /Applications, launches it
 
 `make run` builds and launches from the cargo target directory instead, which is the one to use
 while working on it. Both kill a running copy first.
-
-Install it properly — into `/Applications` — before turning on launch at login: macOS registers
-whatever path the app was launched from, and a copy under `target/` disappears on the next
-`make clean`.
 
 ## Settings
 
@@ -56,16 +68,6 @@ The tests never touch the network. The handful that do are `#[ignore]`d and run 
 cargo test --workspace -- --ignored
 ```
 
-## Install
-
-Once the first release is cut, a Homebrew cask:
-
-```sh
-brew install --cask gautham-v/tap/scorebar
-```
-
-`.github/workflows/release.yml` and `packaging/scorebar.rb` are the machinery for that, waiting on
-the first `v*` tag. Until then, build it from source.
 
 ## Layout
 
