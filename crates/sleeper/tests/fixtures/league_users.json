@@ -1,0 +1,93 @@
+[
+  {
+    "avatar": "11111111111111111111111111111111",
+    "display_name": "manager_a",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "200000000000000001",
+    "metadata": {
+      "allow_pn": "on",
+      "allow_sms": "on",
+      "archived": "off",
+      "mention_pn": "on"
+    },
+    "settings": null,
+    "user_id": "100000000000000001"
+  },
+  {
+    "avatar": "13131313131313131313131313131313",
+    "display_name": "manager_c",
+    "is_bot": false,
+    "is_owner": true,
+    "league_id": "200000000000000001",
+    "metadata": {
+      "allow_pn": "on",
+      "mention_pn": "on",
+      "show_mascots": "on",
+      "team_name": "Team C"
+    },
+    "settings": null,
+    "user_id": "100000000000000003"
+  },
+  {
+    "avatar": "16161616161616161616161616161616",
+    "display_name": "manager_f",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "200000000000000001",
+    "metadata": {
+      "allow_pn": "on",
+      "allow_sms": "off",
+      "mention_pn": "on"
+    },
+    "settings": null,
+    "user_id": "100000000000000006"
+  },
+  {
+    "avatar": "18181818181818181818181818181818",
+    "display_name": "manager_h",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "200000000000000001",
+    "metadata": {
+      "allow_pn": "on",
+      "allow_sms": "on",
+      "avatar": "https://example.invalid/avatars/manager_h.png",
+      "mention_pn": "on",
+      "show_mascots": "on",
+      "team_name": "Team H"
+    },
+    "settings": null,
+    "user_id": "100000000000000008"
+  },
+  {
+    "avatar": "19191919191919191919191919191919",
+    "display_name": "manager_i",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "200000000000000001",
+    "metadata": {
+      "allow_pn": "on",
+      "allow_sms": "on",
+      "archived": "off",
+      "mention_pn": "on"
+    },
+    "settings": null,
+    "user_id": "100000000000000009"
+  },
+  {
+    "avatar": "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
+    "display_name": "manager_k",
+    "is_bot": false,
+    "is_owner": false,
+    "league_id": "200000000000000001",
+    "metadata": {
+      "allow_pn": "on",
+      "allow_sms": "on",
+      "mention_pn": "on",
+      "team_name": "Team K"
+    },
+    "settings": null,
+    "user_id": "100000000000000011"
+  }
+]

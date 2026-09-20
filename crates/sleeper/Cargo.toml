@@ -1,0 +1,16 @@
+[package]
+name = "sleeper"
+description = "Client for the public Sleeper fantasy football API"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+# No gpui, no AppKit, no async runtime: this crate is types plus blocking HTTP,
+# so it builds and tests on any platform a CI runner has.
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true

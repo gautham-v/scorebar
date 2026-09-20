@@ -1,0 +1,187 @@
+name: Release
+
+# Dormant until the first v* tag. The app crate and scripts/bundle.sh do not
+# exist yet, so this workflow would fail if it ran on every push to main —
+# hence tags and manual runs only. It goes live with the first v* tag, once
+# there is a Scorebar.app to build.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  app:
+    name: Universal Scorebar.app
+    runs-on: macos-14
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+    permissions:
+      contents: write
+    # `secrets` cannot be read from a step's `if`; job env can.
+    env:
+      HAVE_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_P12 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain and both macOS targets
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+
+      - name: Cache cargo and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-release-${{ hashFiles('Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-release-
+
+      - name: Build both architectures
+        run: |
+          cargo build --release --locked --target aarch64-apple-darwin
+          cargo build --release --locked --target x86_64-apple-darwin
+
+      # Developer ID signing and notarization, when the secrets are set:
+      #   DEVELOPER_ID_P12          base64 of the "Developer ID Application" .p12
+      #   DEVELOPER_ID_P12_PASSWORD the password that .p12 was exported with
+      #   APPLE_ID                  the Apple ID that owns the certificate
+      #   APPLE_APP_PASSWORD        an app-specific password for that Apple ID
+      #   APPLE_TEAM_ID             the ten-character team id
+      # Without them the bundle script signs ad hoc and users get the
+      # "Open Anyway" dance instead of a clean first launch.
+      - name: Import the Developer ID certificate
+        id: cert
+        if: env.HAVE_DEVELOPER_ID == 'true'
+        env:
+          DEVELOPER_ID_P12: ${{ secrets.DEVELOPER_ID_P12 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+        run: |
+          set -euo pipefail
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          keychain_password="$(openssl rand -hex 16)"
+          echo "$DEVELOPER_ID_P12" | base64 --decode > "$RUNNER_TEMP/developer-id.p12"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$RUNNER_TEMP/developer-id.p12" -k "$keychain" \
+            -P "$DEVELOPER_ID_P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain" login.keychain-db
+          identity="$(security find-identity -v -p codesigning "$keychain" \
+            | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n 1)"
+          [ -n "$identity" ] || { echo "::error::no Developer ID Application identity in the .p12"; exit 1; }
+          echo "identity=$identity" >> "$GITHUB_OUTPUT"
+          rm "$RUNNER_TEMP/developer-id.p12"
+
+      # One binary for both Macs, then the same bundle script `make install`
+      # uses. With no identity the script signs ad hoc.
+      - name: Bundle
+        id: package
+        env:
+          CODESIGN_IDENTITY: ${{ steps.cert.outputs.identity }}
+        run: |
+          set -euo pipefail
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)"
+          mkdir -p dist
+          lipo -create -output dist/scorebar \
+            target/aarch64-apple-darwin/release/scorebar \
+            target/x86_64-apple-darwin/release/scorebar
+          lipo -info dist/scorebar
+          SCOREBAR_BIN="$PWD/dist/scorebar" ./scripts/bundle.sh
+          codesign --verify --verbose target/Scorebar.app
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Notarize and staple
+        if: steps.cert.outputs.identity != ''
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          ditto -c -k --keepParent target/Scorebar.app "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+            --apple-id "$APPLE_ID" --password "$APPLE_APP_PASSWORD" --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple target/Scorebar.app
+          spctl --assess --type execute --verbose target/Scorebar.app
+
+      - name: Zip
+        run: |
+          set -euo pipefail
+          version="${{ steps.package.outputs.version }}"
+          ditto -c -k --keepParent target/Scorebar.app "dist/Scorebar-${version}.zip"
+          shasum -a 256 "dist/Scorebar-${version}.zip" | tee "dist/Scorebar-${version}.zip.sha256"
+
+      - name: Upload the artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Scorebar-${{ steps.package.outputs.version }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+
+      # Only a pushed tag publishes. A manual run builds the artifact and stops.
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "scorebar ${GITHUB_REF_NAME}" \
+            --generate-notes \
+            "dist/Scorebar-${{ steps.package.outputs.version }}.zip" \
+            "dist/Scorebar-${{ steps.package.outputs.version }}.zip.sha256"
+
+  # The tap: packaging/scorebar.rb with this release's version and checksum,
+  # pushed to gautham-v/homebrew-tap as Casks/scorebar.rb. Needs TAP_TOKEN, a
+  # fine-grained PAT with contents: write on the tap repository only.
+  tap:
+    name: Update the Homebrew tap
+    needs: app
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download the checksum
+        uses: actions/download-artifact@v4
+        with:
+          name: Scorebar-${{ needs.app.outputs.version }}
+          path: dist
+
+      - name: Write the cask
+        run: |
+          set -euo pipefail
+          version="${{ needs.app.outputs.version }}"
+          sha="$(cut -d' ' -f1 dist/*.sha256)"
+          sed -e "s/^  version \"[^\"]*\"/  version \"${version}\"/" \
+              -e "s/^  sha256 \"[0-9a-f]*\"/  sha256 \"${sha}\"/" \
+              packaging/scorebar.rb > scorebar.rb
+          grep -E '^  (version|sha256) ' scorebar.rb
+
+      - name: Push it to the tap
+        env:
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::TAP_TOKEN is not set; add a fine-grained PAT with contents: write on gautham-v/homebrew-tap"
+            exit 1
+          fi
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/gautham-v/homebrew-tap.git" tap
+          mkdir -p tap/Casks
+          cp scorebar.rb tap/Casks/scorebar.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/scorebar.rb
+          git diff --cached --quiet && { echo "tap already at ${{ needs.app.outputs.version }}"; exit 0; }
+          git commit -m "scorebar ${{ needs.app.outputs.version }}"
+          git push

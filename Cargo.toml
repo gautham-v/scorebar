@@ -1,0 +1,31 @@
+# scorebar is a workspace because the Sleeper client is worth keeping separate
+# from the menu bar app: it is plain data fetching with no gpui or AppKit in
+# sight, so it builds and tests on any platform and in CI without a display.
+# The app crate lands beside it later and depends on it.
+[workspace]
+resolver = "2"
+members = ["crates/sleeper"]
+
+# Every crate in the workspace inherits these, so a version bump is one edit.
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/gautham-v/scorebar"
+rust-version = "1.98"
+
+# Shared deps live here so the crates cannot drift onto different versions of
+# the same library. reqwest is pinned to rustls rather than the system TLS
+# stack to keep the build free of OpenSSL, and to blocking because the app
+# fetches on a background thread rather than an async runtime.
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+thiserror = "2"
+reqwest = { version = "0.12", default-features = false, features = [
+    "blocking",
+    "json",
+    "rustls-tls",
+    "gzip",
+] }

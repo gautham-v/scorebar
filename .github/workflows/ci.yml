@@ -1,0 +1,43 @@
+name: CI
+
+# Every push to main and every pull request. macOS is the only platform the
+# app will ever ship on, so it is the only one worth gating on.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt, clippy, tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the toolchain
+        run: rustup toolchain install stable --profile minimal --component rustfmt,clippy
+
+      - name: Cache cargo and target
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-ci-${{ hashFiles('Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-ci-
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --workspace -- -D warnings
+
+      # The suite runs against recorded fixtures, never api.sleeper.app: a test
+      # that needs the network is a test that fails when Sleeper is slow, and a
+      # red main for someone else's outage is not worth it.
+      - name: Test
+        run: cargo test --workspace --locked
