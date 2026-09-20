@@ -1,0 +1,8 @@
+/target
+.DS_Store
+
+# local
+/.claude
+CLAUDE.md
+AGENTS.md
+*.token
