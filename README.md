@@ -10,12 +10,11 @@ Rust + [GPUI](https://www.gpui.rs/), sibling of
 
 Give it your Sleeper username and it finds your leagues. The menu bar carries the one still in
 doubt; the popover carries them all, each block a matchup with your score, theirs, and a meter of
-your chance of winning it. Monochrome, one type size, no Dock icon. There is no account to connect
-and no API key: Sleeper's read API is public, so a username is all there is.
+your chance of winning it. Click a block and a window opens on the full head-to-head lineup, slot
+by slot, with what each starter has scored and what they are still projected to.
 
-```sh
-brew install --cask gautham-v/tap/scorebar
-```
+Monochrome, one type size, no Dock icon, no login. Sleeper's read API is public, so a username is
+all there is.
 
 Not affiliated with, endorsed by, or connected to Sleeper. It reads Sleeper's public API the same
 way a browser does.
@@ -26,9 +25,10 @@ way a browser does.
 brew install --cask gautham-v/tap/scorebar
 ```
 
-The cask installs a universal build, signed with a Developer ID and notarized, so it opens without
-the "unidentified developer" detour. `brew uninstall --cask scorebar` quits it and removes it;
-add `--zap` to take the config and the cache with it.
+macOS 13 Ventura or newer, Apple silicon or Intel. The cask installs one universal build, signed
+with a Developer ID and notarized, so it opens without the "unidentified developer" detour.
+`brew uninstall --cask scorebar` quits it and removes it; add `--zap` to take the config and the
+cache with it.
 
 Releases are cut by pushing a `v*` tag: `.github/workflows/release.yml` builds both architectures
 into one binary, signs and notarizes it, publishes the release, and pushes the filled-in
@@ -68,6 +68,13 @@ The tests never touch the network. The handful that do are `#[ignore]`d and run 
 cargo test --workspace -- --ignored
 ```
 
+The popover can be worked on without a menu bar at all — this opens it in an ordinary window,
+filled with invented leagues that cover the states worth looking at:
+
+```sh
+cargo run -p scorebar --example popover_preview
+```
+
 
 ## Layout
 
@@ -93,6 +100,24 @@ credentials, because it has none to keep.
 Nothing leaves your machine except the requests to `api.sleeper.app`. There is no telemetry, no
 analytics, and no third-party service in the path. scorebar writes `~/.config/scorebar/config.toml`
 and a cache of what it last fetched in `~/Library/Caches/scorebar`.
+
+### Win probability
+
+Sleeper does not publish one. There is no such field in the REST API, and none in the GraphQL
+schema either — 244 query fields, none of them a probability. Their app works it out client side,
+and so does this one.
+
+Each league's projections are scored with that league's own `scoring_settings`, which is what makes
+a superflex half-PPR league project differently from a standard one. Then every starter who has not
+scored yet is drawn from a distribution around their projection, 20,000 times, and the fraction of
+those runs you win is the number in the meter.
+
+Checked against Sleeper's own app on a live Sunday afternoon, it landed within two points on all
+three leagues it was compared on. The one server-computed number Sleeper does have, `proj_points`
+on `MatchupLeg`, needs a signed-in session, which is not something an app like this should be
+asking you for.
+
+### Fixtures
 
 The fixtures under `crates/sleeper/tests/fixtures/` are captured from a real league and anonymized:
 user ids, league ids, display names, team names and avatar hashes are synthetic. Player ids, NFL
